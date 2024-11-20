@@ -30,11 +30,24 @@ def is_country_and_year_valid(data, country: str, year: str):
 
 
 def get_medals_by_country_year(data, country: str, year: str):
-    pass
+    medals = []
+    for row in data:
+        if not row['Team'] == country and not row['NOC'] == country:
+            continue
+        if not row['Year'] == year or row['Medal'] == 'NA':
+            continue
+        medals.append({'Name': row['Name'], 'Sport': row['Sport'], 'Medal': row['Medal']})
+    return medals  
 
 
-def print_medals(file_name: str = None):
-    pass
+def print_medals(medals, file_name: str = None):
+    if len(medals) < 10:
+        print("Country has less then 10 medals")
+        return
+    table_header = "{:30s} | \t {:25s} |\t {}\n".format("Name", "Sport", "Medal")
+    print(table_header)
+    for medal in medals[:10]:
+        print(f"{medal['Name']:30s} |\t {medal['Sport']:25s} |\t {medal['Medal']}")
 
 
 if __name__ == '__main__':
