@@ -45,10 +45,20 @@ def print_medals(medals, file_name: str = None):
     if len(medals) < 10:
         print("Country has less then 10 medals")
         return
+
     table_header = "{:30s} | \t {:25s} |\t {}\n".format("Name", "Sport", "Medal")
-    print(table_header)
+    table = ""
     for medal in medals[:10]:
-        print(f"{medal['Name']:30s} |\t {medal['Sport']:25s} |\t {medal['Medal']}")
+        table += f"{medal['Name']:30s} |\t {medal['Sport']:25s} |\t {medal['Medal']}\n"
+
+    if file_name:
+        with open(file_name, 'w') as file:
+            file.write(table_header)
+            file.write(table)
+            print(f'Results written to "{file_name}"')
+    else:
+        print(table_header)
+        print(table)
 
 
 if __name__ == '__main__':
@@ -58,4 +68,5 @@ if __name__ == '__main__':
         print("Not valid country or there was no olympiad in given year")
         exit()
     medals = get_medals_by_country_year(data, args.medals[0], args.medals[1])
-    print_medals(medals)
+    print_medals(medals, args.output)
+
