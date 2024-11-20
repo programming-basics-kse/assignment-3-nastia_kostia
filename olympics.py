@@ -9,7 +9,8 @@ def parse_command_line():
     )
 
     parser.add_argument('filename', help='Path to the data file')
-    parser.add_argument('-m', '--medals', nargs=2, help='country abbreviation and year')
+    parser.add_argument('-m', '--medals', nargs=2, required=True, help='country abbreviation and year')
+    parser.add_argument('-o', '--output', help='The name of the output file')
     return parser.parse_args()
 
 
