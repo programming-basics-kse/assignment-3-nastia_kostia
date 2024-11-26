@@ -1,11 +1,35 @@
+from collections import defaultdict
+class Olympiad():
+    def __init__(self, city=''):
+        self.city = city
+        self.total_medals = 0
+        self.medals = {
+            'Gold': 0,
+            'Silver': 0,
+            'Bronze': 0
+        }
 
+    def add_medal(self, medal):
+        if medal != 'NA':
+            self.medals[medal] += 1
+            self.total_medals += 1
+
+    def get_medals_count(self):
+        return self.medals
+    
+    def get_total_medals(self):
+        return self.total_medals
+    
+    def get_city(self):
+        return self.city
+    
+    def __lt__(self, other_olympiad):
+        return self.total_medals < other_olympiad.total_medals
+    
 class Parser:
     def __init__(self, data, outputfile=None):
         self.data = data
         self.outputfile = outputfile
-
-    def check_data(self):
-        pass
 
     def parse_data(self):
         pass
@@ -45,6 +69,10 @@ class Top10Medalists(Parser):
                 continue
             self.medals.append({'Name': row['Name'], 'Sport': row['Sport'], 'Medal': row['Medal']})
 
+        if len(self.medals) == 0:
+            print("Not valid country or there was no olympiad in given year")
+            return False
+
         if len(self.medals) < 10:
             print("Country has less then 10 medals")
             return
@@ -54,64 +82,80 @@ class Top10Medalists(Parser):
         for medal in self.medals[:10]:
             self.table += f"{medal['Name']:30s} |\t {medal['Sport']:25s} |\t {medal['Medal']}\n"
 
-        return self.medals
+        return True
     
 class Total(Parser):
     def __init__(self, data, args):
         self.data = data
         self.year = args
-
-    def check_data(self):
-        pass
     
     def parse_data(self):
-        pass
+        countries = {}
+        self.medals = []
+        for row in self.data:
+            if not row['Year'] == self.year:
+                continue
+            if not row['Team'] in countries:
+                countries[row['Team']] = Olympiad()
+            countries[row['Team']].add_medal(row['Medal'])
+
+        if len(countries) == 0:
+            print(f"In the {self.year} year olympiad didn't take place")
+            return False
+        
+        self.table_header = "{:25s} | \t {:10s} |\t {:10s} |\t {}\n".format("Country", "Gold", "Silver", "Bronze")
+        self.table = ""
+        for country, olympiad in sorted(countries.items(), reverse=True, key=lambda o: o[1]):
+            if olympiad.get_total_medals() < 1:
+                continue
+            medals = olympiad.get_medals_count()
+            self.table += "{:25s} | \t {:10s} |\t {:10s} |\t {}\n".format(
+                country, str(medals['Gold']), str(medals['Silver']), str(medals['Bronze']))
+
+        return True
+
 
 class Overall(Parser):
     def __init__(self, data, args):
         self.data = data
         self.countries = args
 
-    def check_data(self):
-        pass
-    
     def parse_data(self):
-        pass
+        countries = defaultdict(dict)
+        for row in self.data:
+            if not row['Team'] in self.countries:
+                continue
+            if not row['Team'] in countries:
+                countries[row['Team']][int(row['Year'])] = Olympiad()
+            if not int(row['Year']) in countries[row['Team']]:
+                countries[row['Team']][int(row['Year'])] = Olympiad()
+            countries[row['Team']][int(row['Year'])].add_medal(row['Medal'])
+
+        if len(countries) == 0:
+            print("Some of the entered countries doesn't exist")
+            return False
+        
+        countries_best_year = {}
+        for country, years in countries.items():
+            countries_best_year[country] = max(years, key=years.get)
+
+        self.table_header = "{:25s} | \t {:5s} |\t {}\n".format("Country", "Year", "Total Medals")
+        self.table = ""
+        for country, year in countries_best_year.items():
+            self.table += "{:25s} | \t {:5s} |\t {}\n".format(
+                country, str(year), str(countries[country][year].get_total_medals()))
+        return True
+
+        
+
 
 
 class Interactive(Parser):
     def __init__(self, data):
         self.data = data
 
-    def check_data(self):
-        pass
-    
     def parse_data(self, country):
-        class Olympiad():
-            def __init__(self, city=''):
-                self.city = city
-                self.total_medals = 0
-                self.medals = {
-                    'Gold': 0,
-                    'Silver': 0,
-                    'Bronze': 0
-                }
-            def add_medal(self, medal):
-                if medal != 'NA':
-                    self.medals[medal] += 1
-                    # print(self.medals)
-                self.total_medals += 1
-            def get_medals_count(self):
-                return self.medals
-            def get_total_medals(self):
-                return self.total_medals
-            def get_city(self):
-                return self.city
-            def __lt__(self, other_olympiad):
-                return self.total_medals < other_olympiad.total_medals
-
         years = {}
-        self.medals = []
         for row in self.data:
             if not row['Team'] == country and not row['NOC'] == country:
                 continue
@@ -142,3 +186,5 @@ class Interactive(Parser):
             "Avarage Number of Medals:", '', "Gold", "Silver", "Bronze") 
         self.table += "{:25s} {:10s} |\t {:10s} |\t {:10s}".format(
             '', str(avg_medals["Gold"]), str(avg_medals["Silver"]), str(avg_medals["Bronze"])) 
+        
+        return True
